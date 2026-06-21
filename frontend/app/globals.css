@@ -1,0 +1,259 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   HiveMind — Design System Tokens
+   Dark-first theme. No light mode in v1.
+   ========================================================================== */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* HiveMind custom tokens */
+  --color-hm-surface: var(--hm-surface);
+  --color-hm-surface-elevated: var(--hm-surface-elevated);
+  --color-hm-success: var(--hm-success);
+  --color-hm-warning: var(--hm-warning);
+  --color-hm-danger: var(--hm-danger);
+  --color-hm-primary: var(--hm-primary);
+}
+
+/* HiveMind dark-first — no :root light mode */
+:root {
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  --card: #111827;
+  --card-foreground: #FAFAFA;
+  --popover: #111827;
+  --popover-foreground: #FAFAFA;
+  --primary: #8B5CF6;
+  --primary-foreground: #FAFAFA;
+  --secondary: #18181B;
+  --secondary-foreground: #FAFAFA;
+  --muted: #18181B;
+  --muted-foreground: #A1A1AA;
+  --accent: #1E1B4B;
+  --accent-foreground: #FAFAFA;
+  --destructive: #EF4444;
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #8B5CF6;
+  --radius: 0.625rem;
+
+  /* Chart colors — agent-themed */
+  --chart-1: #F59E0B;
+  --chart-2: #3B82F6;
+  --chart-3: #22C55E;
+  --chart-4: #8B5CF6;
+  --chart-5: #EF4444;
+
+  /* Sidebar */
+  --sidebar: #0A0A0C;
+  --sidebar-foreground: #FAFAFA;
+  --sidebar-primary: #8B5CF6;
+  --sidebar-primary-foreground: #FAFAFA;
+  --sidebar-accent: #18181B;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #27272A;
+  --sidebar-ring: #8B5CF6;
+
+  /* HiveMind custom */
+  --hm-surface: #111827;
+  --hm-surface-elevated: #18181B;
+  --hm-success: #22C55E;
+  --hm-warning: #F59E0B;
+  --hm-danger: #EF4444;
+  --hm-primary: #8B5CF6;
+}
+
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ==========================================================================
+   HiveMind Animations
+   ========================================================================== */
+
+/* Agent "working" status pulse */
+@keyframes hm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Event feed slide-in */
+@keyframes hm-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Success flash for task_approved */
+@keyframes hm-flash-success {
+  0% { background-color: rgba(34, 197, 94, 0.15); }
+  100% { background-color: transparent; }
+}
+
+/* Danger flash for task_rejected */
+@keyframes hm-flash-danger {
+  0% { background-color: rgba(239, 68, 68, 0.15); }
+  100% { background-color: transparent; }
+}
+
+/* Cold-start amber pulse */
+@keyframes hm-cold-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
+}
+
+/* Subtle glow for cards */
+@keyframes hm-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.05); }
+  50% { box-shadow: 0 0 25px rgba(139, 92, 246, 0.1); }
+}
+
+/* Graph node pulse */
+@keyframes hm-node-running {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+}
+
+.animate-hm-pulse {
+  animation: hm-pulse 2s ease-in-out infinite;
+}
+
+.animate-hm-slide-in {
+  animation: hm-slide-in 0.3s ease-out;
+}
+
+.animate-hm-flash-success {
+  animation: hm-flash-success 1.5s ease-out;
+}
+
+.animate-hm-flash-danger {
+  animation: hm-flash-danger 1.5s ease-out;
+}
+
+.animate-hm-cold-pulse {
+  animation: hm-cold-pulse 2s ease-in-out infinite;
+}
+
+.animate-hm-glow {
+  animation: hm-glow 4s ease-in-out infinite;
+}
+
+.animate-hm-node-running {
+  animation: hm-node-running 2s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+/* Glassmorphism surface */
+.hm-glass {
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(39, 39, 42, 0.5);
+}
+
+/* Scrollbar styling */
+.hm-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.hm-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hm-scrollbar::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 3px;
+}
+.hm-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Gradient text */
+.hm-gradient-text {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 50%, #8B5CF6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient border */
+.hm-gradient-border {
+  position: relative;
+}
+.hm-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(99, 102, 241, 0.1));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}

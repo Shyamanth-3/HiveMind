@@ -1,0 +1,1 @@
+HiveMind is a multi-agent operating system where autonomous AI workers collaborate through an event-driven architecture to accomplish complex goals.
