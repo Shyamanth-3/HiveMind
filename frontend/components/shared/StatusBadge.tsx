@@ -102,10 +102,12 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-medium",
-        size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
+        "inline-flex items-center gap-1.5 rounded-full font-bold uppercase tracking-wider border",
+        size === "sm" ? "px-2 py-[2px] text-[10px]" : "px-2.5 py-1 text-[10px]",
         config.bgClass,
         config.textClass,
+        // dynamically generate border color based on textClass
+        config.textClass.replace('text-', 'border-').concat('/20'),
         className
       )}
     >
@@ -113,7 +115,7 @@ export function StatusBadge({
         <span
           className={cn(
             "rounded-full shrink-0",
-            size === "sm" ? "h-1.5 w-1.5" : "h-2 w-2",
+            size === "sm" ? "h-[6px] w-[6px]" : "h-2 w-2",
             config.dotClass
           )}
         />

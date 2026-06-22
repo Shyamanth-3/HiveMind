@@ -10,7 +10,7 @@ import { TopNav } from "./TopNav";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const sidebarWidth = isSidebarCollapsed ? 68 : 280;
+  const sidebarWidth = isSidebarCollapsed ? 68 : 224;
 
   return (
     <div className="flex min-h-screen bg-background">

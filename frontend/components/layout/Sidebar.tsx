@@ -44,13 +44,13 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     <aside
       className={cn(
         "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-[var(--sidebar)] transition-all duration-300",
-        isCollapsed ? "w-[68px]" : "w-[280px]"
+        isCollapsed ? "w-[68px]" : "w-56"
       )}
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-border px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--hm-primary)]/10">
-          <Hexagon className="h-5 w-5 text-[var(--hm-primary)]" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[var(--hm-primary)]/10">
+          <img src="/logo.png" alt="HiveMind Logo" className="h-full w-full object-contain p-1" />
         </div>
         {!isCollapsed && (
           <div className="flex flex-col">
@@ -76,7 +76,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-[var(--hm-primary)]/10 text-[var(--hm-primary)]"
+                  ? "bg-[var(--hm-primary)]/15 text-[var(--hm-primary)]"
                   : "text-muted-foreground hover:bg-[var(--hm-surface-elevated)] hover:text-foreground"
               )}
             >

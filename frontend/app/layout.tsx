@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-geist-mono",
@@ -29,10 +24,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`dark ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        <link href="https://api.fontshare.com/v2/css?f[]=general-sans@200,300,400,500,600,700&display=swap" rel="stylesheet" />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <AppLayout>{children}</AppLayout>
+        <TooltipProvider>
+          <AppLayout>{children}</AppLayout>
+        </TooltipProvider>
       </body>
     </html>
   );

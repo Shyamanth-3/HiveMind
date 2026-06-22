@@ -20,6 +20,9 @@
 # production
 /build
 
+#openspec
+/openspec
+
 # misc
 .DS_Store
 *.pem
