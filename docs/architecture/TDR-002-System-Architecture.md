@@ -104,6 +104,12 @@ The Scheduler acts as the orchestration layer while agents focus exclusively on 
 
 ---
 
+
+<p align="center">
+  <img src="./diagrams/System_Architecture.png" alt="HiveMind System Architecture" width="1000">
+</p>
+
+
 # Core Components
 
 ## API Layer
