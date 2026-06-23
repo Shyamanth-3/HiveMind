@@ -8,30 +8,15 @@ The platform enables specialized agents to plan, decompose, research, execute, r
 
 ## Technology Stack
 
-### Frontend
-
-* Next.js 15
-
-### Backend
-
+* Next.js
 * Python
 * FastAPI
-
-### Database
-
 * PostgreSQL
 * pgvector
-
-### Messaging
-
 * Redis Pub/Sub
-
-### Infrastructure
-
+* SQLAlchemy
+* Alembic
 * Docker
-
-### Testing
-
 * Pytest
 
 ---
@@ -144,6 +129,47 @@ Retrieved Context
 
 ---
 
+## Project Structure
+
+```text
+HiveMind/
+│
+├── backend/
+├── docs/
+├── frontend/
+├── infrastructure/
+│
+├── docker-compose.yml
+├── README.md
+└── TDR-001-HiveMind-Tech-Stack.md
+```
+---
+
+## Current Status
+
+Completed:
+
+* System Design
+* Frontend Command Center
+* Technology Decisions
+* Documentation
+
+In Progress:
+
+* Backend Foundation
+* Redis Event Bus
+* Agent Framework
+
+Planned:
+
+* Agent Orchestration
+* Memory System
+* RAG Pipeline
+* Observability
+
+---
+
+
 ## Development
 
 ### Frontend
@@ -161,11 +187,6 @@ cd backend
 uvicorn app.main:app --reload
 ```
 
----
-
-## License
-
-This project is currently under active development.
 
 ---
 
