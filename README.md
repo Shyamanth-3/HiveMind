@@ -11,10 +11,6 @@ The platform enables specialized agents to plan, decompose, research, execute, r
 ### Frontend
 
 * Next.js 15
-* TypeScript
-* Tailwind CSS
-* shadcn/ui
-* TanStack Query
 
 ### Backend
 
@@ -30,17 +26,9 @@ The platform enables specialized agents to plan, decompose, research, execute, r
 
 * Redis Pub/Sub
 
-### AI Providers
-
-* OpenAI
-* Anthropic
-* Gemini
-* Ollama
-
 ### Infrastructure
 
 * Docker
-* Docker Compose
 
 ### Testing
 
@@ -153,48 +141,6 @@ Similarity Search
 Retrieved Context
 ```
 
----
-
-## Project Structure
-
-```text
-HiveMind/
-│
-├── backend/
-├── docs/
-├── frontend/
-├── infrastructure/
-│
-├── docker-compose.yml
-├── README.md
-└── TDR-001-HiveMind-Tech-Stack.md
-```
-
----
-
-## Current Status
-
-Completed:
-
-* Project Vision
-* System Architecture
-* Technology Decisions
-* Frontend Command Center
-* TDR-001
-
-In Progress:
-
-* Backend Foundation
-* Redis Event Bus
-* Agent Framework
-
-Planned:
-
-* Memory System
-* RAG Pipeline
-* Agent Orchestration
-* Observability
-* Distributed Execution
 
 ---
 
@@ -225,6 +171,5 @@ This project is currently under active development.
 
 ## Maintainer
 
-Shyamanth
-B.Tech Information Technology
-VNR VJIET
+Nadella Shyamanth
+
