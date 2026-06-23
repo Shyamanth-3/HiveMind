@@ -22,6 +22,7 @@
 
 #openspec
 /openspec
+/.agent/
 
 # misc
 .DS_Store
