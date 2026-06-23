@@ -292,15 +292,23 @@ Tasks may depend on other tasks before becoming eligible for execution.
 
 Example:
 
+```text
 Research Competitors
-↓
+        |
+        v
 Create Sitemap
-↓
+        |
+        v
 Create Wireframes
-↙          ↘
-Homepage    Contact Page
-↘          ↙
+      /   \
+     v     v
+Homepage  Contact Page
+     \     /
+      v   v
 Review Website
+```
+
+
 
 This model enables:
 
