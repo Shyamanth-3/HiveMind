@@ -1,0 +1,12 @@
+# Environment
+.env
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Learning / Temporary Scripts
+create_run.py
+create_tables.py
+test_db.py
