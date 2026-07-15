@@ -12,6 +12,9 @@ from fastapi import HTTPException
 
 from app.models import Run
 from app.schemas.run import RunCreate, RunUpdate
+from app.events.event_bus import EventBus
+from app.events.schemas import KafkaEvent
+from app.events.event_types import EventTypes
 
 
 def get_run(db: Session, run_id: str) -> Run:
@@ -30,12 +33,25 @@ def get_all_runs(db: Session, project_id: str | None = None) -> Sequence[Run]:
     return db.scalars(stmt).all()
 
 
-def create_run(db: Session, run_in: RunCreate) -> Run:
+def create_run(db: Session, run_in: RunCreate, event_bus: EventBus) -> Run:
     """Create a new run."""
     db_run = Run(**run_in.model_dump())
     db.add(db_run)
     db.commit()
     db.refresh(db_run)
+    
+    # Publish run.created event via the EventBus abstraction
+    event = KafkaEvent(
+        event_type=EventTypes.RUN_CREATED,
+        source="run_service",
+        run_id=db_run.id,
+        payload={
+            "project_id": db_run.project_id,
+            "goal": db_run.goal,
+        }
+    )
+    event_bus.publish(event)
+    
     return db_run
 
 

@@ -1,7 +1,10 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { mockAgentStatus } from "@/lib/mockData";
-import { backendRoleToPersona, getPersonaIcon, getPersonaColor, getPersonaDescription } from "@/lib/agentNames";
+import { useApi } from "@/hooks/useApi";
+import { fetchAgentStatuses } from "@/lib/api";
+import { backendRoleToPersona, getPersonaIcon, getPersonaColor } from "@/lib/agentNames";
 import type { BackendRoleKey } from "@/types";
 
 // =============================================================================
@@ -9,16 +12,18 @@ import type { BackendRoleKey } from "@/types";
 // =============================================================================
 
 export function AgentHealthGrid() {
+  const { data: agentStatus } = useApi(fetchAgentStatuses);
+
   return (
     <div className="hm-glass rounded-xl p-5">
       <h3 className="text-sm font-semibold text-foreground mb-4">
         Agent Health
       </h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {mockAgentStatus.map((agent) => {
+        {(agentStatus ?? []).map((agent) => {
           const Icon = getPersonaIcon(agent.agent);
           const color = getPersonaColor(agent.agent);
-          const persona = backendRoleToPersona[agent.agent];
+          const persona = backendRoleToPersona[agent.agent as BackendRoleKey] ?? agent.agent;
 
           return (
             <div

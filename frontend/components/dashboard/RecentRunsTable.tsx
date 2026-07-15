@@ -1,6 +1,9 @@
+"use client";
+
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { mockRuns } from "@/lib/mockData";
 import { Search, Plus, MoreHorizontal } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
+import { fetchRuns } from "@/lib/api";
 
 // =============================================================================
 // RecentRunsTable — Dashboard table showing recent runs
@@ -23,6 +26,8 @@ function formatDate(iso: string): string {
 }
 
 export function RecentRunsTable() {
+  const { data: runs, loading } = useApi(fetchRuns);
+
   return (
     <div className="bg-[var(--hm-surface)] border border-border rounded-xl p-5">
       <div className="flex items-center justify-between mb-6">
@@ -70,7 +75,14 @@ export function RecentRunsTable() {
             </tr>
           </thead>
           <tbody>
-            {mockRuns.map((run) => (
+            {loading && (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-muted-foreground text-sm">
+                  Loading runs...
+                </td>
+              </tr>
+            )}
+            {(runs ?? []).map((run) => (
               <tr
                 key={run.id}
                 className="border-b border-border/50 transition-colors hover:bg-[#2a2a2a]/50 cursor-pointer group"

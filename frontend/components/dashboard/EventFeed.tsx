@@ -21,7 +21,7 @@ function formatLatency(ms: number): string {
 }
 
 function EventRow({ event }: { event: Event }) {
-  const agent = event.event_type === "system_alert" ? undefined : event.agent;
+  const agent = event.agent ?? undefined;
   const Icon = agent ? getPersonaIcon(agent) : null;
   const color = agent ? getPersonaColor(agent) : "var(--hm-primary)";
   const persona = agent ? backendRoleToPersona[agent] : "System";

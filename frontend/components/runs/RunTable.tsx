@@ -4,7 +4,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { RunDetailDrawer } from "./RunDetailDrawer";
-import { mockRuns } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchRuns } from "@/lib/api";
 import type { Run, RunStatus } from "@/types";
 
 // =============================================================================
@@ -34,14 +35,16 @@ const statusFilters: { label: string; value: RunStatus | "all" }[] = [
 ];
 
 export function RunTable() {
+  const { data: runs, loading } = useApi(fetchRuns);
   const [selectedRun, setSelectedRun] = useState<Run | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<RunStatus | "all">("all");
 
+  const allRuns = runs ?? [];
   const filteredRuns =
     statusFilter === "all"
-      ? mockRuns
-      : mockRuns.filter((r) => r.status === statusFilter);
+      ? allRuns
+      : allRuns.filter((r) => r.status === statusFilter);
 
   const openDrawer = (run: Run) => {
     setSelectedRun(run);
@@ -92,6 +95,13 @@ export function RunTable() {
               </tr>
             </thead>
             <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-muted-foreground text-sm">
+                    Loading runs...
+                  </td>
+                </tr>
+              )}
               {filteredRuns.map((run) => (
                 <tr
                   key={run.id}

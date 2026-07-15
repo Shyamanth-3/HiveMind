@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     REDIS_URL: str
     CORS_ORIGINS: str = "http://localhost:3000"
 
+    # Kafka
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_TOPIC: str = "hivemind.events"
+    KAFKA_CONSUMER_GROUP: str = "hivemind-scheduler"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",

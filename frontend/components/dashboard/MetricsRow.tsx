@@ -1,25 +1,34 @@
+"use client";
+
 import { MetricCard } from "@/components/shared/MetricCard";
 import { Activity, Users, CheckCircle, IndianRupee, Database } from "lucide-react";
-import { mockRuns, mockAgentStatus, mockTasks, mockMemoryChunks, getTotalCostINR } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchRuns, fetchTasks, fetchMemoryChunks, fetchAgentStatuses, fetchCostSummary } from "@/lib/api";
 
 // =============================================================================
 // MetricsRow — 5 key metric cards for dashboard
 // =============================================================================
 
 export function MetricsRow() {
-  const activeRuns = mockRuns.filter((r) => r.status === "running").length;
-  const agentsOnline = mockAgentStatus.filter(
+  const { data: runs } = useApi(fetchRuns);
+  const { data: agentStatus } = useApi(fetchAgentStatuses);
+  const { data: tasks } = useApi(fetchTasks);
+  const { data: memoryChunks } = useApi(fetchMemoryChunks);
+  const { data: costSummary } = useApi(fetchCostSummary);
+
+  const activeRuns = (runs ?? []).filter((r) => r.status === "running").length;
+  const agentsOnline = (agentStatus ?? []).filter(
     (a) => a.status === "online" || a.status === "working"
   ).length;
 
-  const completedTasks = mockTasks.filter(
+  const completedTasks = (tasks ?? []).filter(
     (t) => t.status === "completed" || t.status === "approved"
   ).length;
-  const totalTasks = mockTasks.length;
+  const totalTasks = (tasks ?? []).length;
   const successRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const totalCost = getTotalCostINR();
-  const memoryChunks = mockMemoryChunks.length;
+  const totalCostINR = (costSummary?.total_cost_usd ?? 0) * 83;
+  const memoryCount = (memoryChunks ?? []).length;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -44,13 +53,13 @@ export function MetricsRow() {
       />
       <MetricCard
         label="Total Cost"
-        value={`₹${totalCost.toFixed(2)}`}
+        value={`₹${totalCostINR.toFixed(2)}`}
         icon={IndianRupee}
         iconColor="text-[var(--hm-warning)]"
       />
       <MetricCard
         label="Memory Chunks"
-        value={memoryChunks}
+        value={memoryCount}
         icon={Database}
         trend={{ value: 12, label: "this week" }}
         iconColor="text-[var(--hm-primary)]"

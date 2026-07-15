@@ -1,13 +1,18 @@
+"use client";
+
 import { MetricCard } from "@/components/shared/MetricCard";
 import { Database, HardDrive, TrendingUp } from "lucide-react";
-import { mockMemoryChunks } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchMemoryChunks } from "@/lib/api";
 
 // =============================================================================
 // KnowledgeStats — Memory statistics cards
 // =============================================================================
 
 export function KnowledgeStats() {
-  const totalChunks = mockMemoryChunks.length;
+  const { data: memoryChunks } = useApi(fetchMemoryChunks);
+
+  const totalChunks = (memoryChunks ?? []).length;
   // Approximate storage: ~1KB per chunk (content + embedding)
   const storageUsedMB = (totalChunks * 1.2) / 1; // ~1.2KB per chunk → MB approx
   const storageDisplay = storageUsedMB < 1 ? `${Math.round(storageUsedMB * 1024)}KB` : `${storageUsedMB.toFixed(1)}MB`;

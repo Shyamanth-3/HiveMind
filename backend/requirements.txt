@@ -7,3 +7,4 @@ python-dotenv
 pydantic-settings
 pytest
 httpx
+confluent-kafka

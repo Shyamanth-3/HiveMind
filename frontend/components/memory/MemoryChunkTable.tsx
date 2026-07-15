@@ -1,4 +1,7 @@
-import { mockMemoryChunks, mockProjects } from "@/lib/mockData";
+"use client";
+
+import { useApi } from "@/hooks/useApi";
+import { fetchMemoryChunks, fetchProjects } from "@/lib/api";
 import { Layers } from "lucide-react";
 
 // =============================================================================
@@ -14,11 +17,16 @@ function formatDate(iso: string): string {
   });
 }
 
-function getProjectName(projectId: string): string {
-  return mockProjects.find((p) => p.id === projectId)?.name || projectId;
-}
-
 export function MemoryChunkTable() {
+  const { data: memoryChunks, loading } = useApi(fetchMemoryChunks);
+  const { data: projects } = useApi(fetchProjects);
+
+  const chunks = memoryChunks ?? [];
+
+  function getProjectName(projectId: string): string {
+    return (projects ?? []).find((p) => p.id === projectId)?.name || projectId;
+  }
+
   return (
     <div className="hm-glass rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center gap-2">
@@ -27,7 +35,7 @@ export function MemoryChunkTable() {
           Memory Chunks
         </h3>
         <span className="text-xs text-muted-foreground">
-          ({mockMemoryChunks.length} chunks)
+          ({chunks.length} chunks)
         </span>
       </div>
       <div className="overflow-x-auto">
@@ -52,7 +60,14 @@ export function MemoryChunkTable() {
             </tr>
           </thead>
           <tbody>
-            {mockMemoryChunks.map((chunk) => (
+            {loading && (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-muted-foreground text-sm">
+                  Loading memory chunks...
+                </td>
+              </tr>
+            )}
+            {chunks.map((chunk) => (
               <tr
                 key={chunk.id}
                 className="border-b border-border/50 transition-colors hover:bg-[var(--hm-surface-elevated)]/50"

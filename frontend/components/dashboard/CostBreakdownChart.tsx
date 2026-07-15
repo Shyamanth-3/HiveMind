@@ -10,7 +10,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { getCostByAgent } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchCostSummary } from "@/lib/api";
 import { backendRoleToPersona } from "@/lib/agentNames";
 import type { BackendRoleKey } from "@/types";
 import { Sparkles, Settings } from "lucide-react";
@@ -20,11 +21,13 @@ import { Sparkles, Settings } from "lucide-react";
 // =============================================================================
 
 export function CostBreakdownChart() {
-  const costByAgent = getCostByAgent();
+  const { data: costSummary } = useApi(fetchCostSummary);
 
-  const data = Object.entries(costByAgent).map(([role, cost]) => ({
-    name: backendRoleToPersona[role as BackendRoleKey],
-    cost: Math.round(cost * 100) / 100,
+  const byAgent = costSummary?.by_agent ?? {};
+
+  const data = Object.entries(byAgent).map(([role, costUsd]) => ({
+    name: backendRoleToPersona[role as BackendRoleKey] ?? role,
+    cost: Math.round(costUsd * 83 * 100) / 100, // USD → INR
     role,
   }));
 

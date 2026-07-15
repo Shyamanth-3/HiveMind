@@ -1,12 +1,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { X, AlertTriangle, CheckCircle, RotateCcw } from "lucide-react";
+import { X, CheckCircle, RotateCcw } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TaskGraphView } from "./TaskGraphView";
 import { ExecutionTimeline } from "./ExecutionTimeline";
 import type { Run } from "@/types";
-import { getTasksForRun, getEventsForRun } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchTasksByRun, fetchEventsByRun } from "@/lib/api";
 
 // =============================================================================
 // RunDetailDrawer — Slide-in drawer showing run details
@@ -19,11 +20,15 @@ interface RunDetailDrawerProps {
 }
 
 export function RunDetailDrawer({ run, isOpen, onClose }: RunDetailDrawerProps) {
+  const runId = run?.id ?? "";
+  const { data: tasks } = useApi(() => fetchTasksByRun(runId), [runId]);
+  const { data: events } = useApi(() => fetchEventsByRun(runId), [runId]);
+
   if (!run) return null;
 
-  const tasks = getTasksForRun(run.id);
-  const events = getEventsForRun(run.id);
-  const hasRetry = tasks.some((t) => t.retry_count > 0);
+  const taskList = tasks ?? [];
+  const eventList = events ?? [];
+  const hasRetry = taskList.some((t) => t.retry_count > 0);
 
   return (
     <>
@@ -84,7 +89,7 @@ export function RunDetailDrawer({ run, isOpen, onClose }: RunDetailDrawerProps) 
               Success Criteria
             </h3>
             <ul className="space-y-2">
-              {run.success_criteria.map((criterion, i) => (
+              {(run.success_criteria ?? []).map((criterion, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                   <CheckCircle className="h-4 w-4 text-[var(--hm-success)] shrink-0 mt-0.5" />
                   <span>{criterion}</span>
@@ -115,7 +120,7 @@ export function RunDetailDrawer({ run, isOpen, onClose }: RunDetailDrawerProps) 
               Task Graph
             </h3>
             <div className="rounded-lg border border-border bg-[var(--hm-surface-elevated)] p-4">
-              <TaskGraphView tasks={tasks} mode="live" />
+              <TaskGraphView tasks={taskList} mode="live" />
             </div>
           </div>
 
@@ -125,7 +130,7 @@ export function RunDetailDrawer({ run, isOpen, onClose }: RunDetailDrawerProps) 
               Execution Timeline
             </h3>
             <div className="rounded-lg border border-border bg-[var(--hm-surface-elevated)] p-4">
-              <ExecutionTimeline events={events} />
+              <ExecutionTimeline events={eventList} />
             </div>
           </div>
         </div>
