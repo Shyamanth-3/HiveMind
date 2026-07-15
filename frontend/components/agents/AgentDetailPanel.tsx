@@ -10,7 +10,8 @@ import {
   getPersonaDescription,
   getAgentContract,
 } from "@/lib/agentNames";
-import { mockEvents } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchRecentEvents } from "@/lib/api";
 import type { AgentStatusData, BackendRoleKey } from "@/types";
 
 // =============================================================================
@@ -33,16 +34,18 @@ function formatTime(iso: string): string {
 }
 
 export function AgentDetailPanel({ data, onClose }: AgentDetailPanelProps) {
+  const { data: allEvents } = useApi(fetchRecentEvents);
+
   if (!data) return null;
 
   const Icon = getPersonaIcon(data.agent);
   const color = getPersonaColor(data.agent);
-  const persona = backendRoleToPersona[data.agent];
+  const persona = backendRoleToPersona[data.agent as BackendRoleKey] ?? data.agent;
   const description = getPersonaDescription(data.agent);
   const contract = getAgentContract(data.agent);
 
   // Activity log scoped to this agent
-  const agentEvents = mockEvents
+  const agentEvents = (allEvents ?? [])
     .filter((e) => e.agent === data.agent)
     .sort(
       (a, b) =>

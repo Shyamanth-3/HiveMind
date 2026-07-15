@@ -11,12 +11,12 @@ import {
   GitBranch,
   FlaskConical,
   Settings,
-  Hexagon,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
 import { SystemHealthCard } from "./SystemHealthCard";
-import { mockSystemServices } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchSystemServices } from "@/lib/api";
 
 // =============================================================================
 // Sidebar — 280px persistent left sidebar with HiveMind nav and system status
@@ -39,6 +39,9 @@ const navItems = [
 
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const { data: systemServices } = useApi(fetchSystemServices);
+
+  const services = systemServices ?? [];
 
   return (
     <aside
@@ -105,12 +108,12 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           </p>
         )}
         {!isCollapsed &&
-          mockSystemServices.map((service) => (
+          services.map((service) => (
             <SystemHealthCard key={service.name} service={service} />
           ))}
         {isCollapsed && (
           <div className="flex flex-col items-center gap-2">
-            {mockSystemServices.map((service) => {
+            {services.map((service) => {
               const dotClass =
                 service.status === "online"
                   ? "bg-[var(--hm-success)]"

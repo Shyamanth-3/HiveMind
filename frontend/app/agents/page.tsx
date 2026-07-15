@@ -4,7 +4,8 @@ import { useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AgentCard } from "@/components/agents/AgentCard";
 import { AgentDetailPanel } from "@/components/agents/AgentDetailPanel";
-import { mockAgentStatus } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchAgentStatuses } from "@/lib/api";
 import type { AgentStatusData } from "@/types";
 
 // =============================================================================
@@ -12,6 +13,7 @@ import type { AgentStatusData } from "@/types";
 // =============================================================================
 
 export default function AgentsPage() {
+  const { data: agentStatus } = useApi(fetchAgentStatuses);
   const [selectedAgent, setSelectedAgent] = useState<AgentStatusData | null>(
     null
   );
@@ -25,7 +27,7 @@ export default function AgentsPage() {
 
       {/* Agent Cards Grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {mockAgentStatus.map((agent) => (
+        {(agentStatus ?? []).map((agent) => (
           <AgentCard
             key={agent.agent}
             data={agent}

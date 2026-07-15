@@ -7,8 +7,10 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.core.dependencies import get_event_bus
 from app.schemas import RunCreate, RunUpdate, RunResponse
 from app.services import run_service
+from app.events.event_bus import EventBus
 
 router = APIRouter(prefix="/runs", tags=["Runs"])
 
@@ -24,10 +26,12 @@ def get_runs(
 
 @router.post("/", response_model=RunResponse, status_code=201)
 def create_run(
-    run_in: RunCreate, db: Session = Depends(get_db)
+    run_in: RunCreate,
+    db: Session = Depends(get_db),
+    event_bus: EventBus = Depends(get_event_bus),
 ) -> RunResponse:
     """Create a new run."""
-    return run_service.create_run(db, run_in)
+    return run_service.create_run(db, run_in, event_bus)
 
 
 @router.get("/{run_id}", response_model=RunResponse)

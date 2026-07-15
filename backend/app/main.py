@@ -11,11 +11,17 @@ The app follows a layered architecture:
 """
 
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.events.kafka_event_bus import KafkaEventBus
+
+# Basic logging setup for FastAPI
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # ── Lifespan ────────────────────────────────────────────────────────────────
@@ -24,13 +30,23 @@ async def lifespan(app: FastAPI):
     """
     Runs on startup and shutdown.
 
-    Startup: Log that the server is ready.
-    Shutdown: (future) close Redis connections, drain queues, etc.
+    Startup: Initialize Kafka producer and store in app state.
+    Shutdown: Flush remaining Kafka messages.
     """
-    print(f"🐝 {settings.APP_NAME} backend starting...")
-    print(f"   Database: {settings.DATABASE_URL.split('@')[-1]}")
+    logger.info(f"🐝 {settings.APP_NAME} backend starting...")
+    logger.info(f"   Database: {settings.DATABASE_URL.split('@')[-1]}")
+    
+    # Initialize KafkaEventBus and attach to app state
+    event_bus = KafkaEventBus(
+        bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
+        topic=settings.KAFKA_TOPIC,
+    )
+    app.state.event_bus = event_bus
+    
     yield
-    print(f"🐝 {settings.APP_NAME} backend shutting down...")
+    
+    logger.info(f"🐝 {settings.APP_NAME} backend shutting down...")
+    event_bus.close()
 
 
 # ── App ─────────────────────────────────────────────────────────────────────

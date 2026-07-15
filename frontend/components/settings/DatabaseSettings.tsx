@@ -1,5 +1,8 @@
+"use client";
+
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { mockSystemServices } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchSystemServices } from "@/lib/api";
 import { Database, Info } from "lucide-react";
 
 // =============================================================================
@@ -7,7 +10,8 @@ import { Database, Info } from "lucide-react";
 // =============================================================================
 
 export function DatabaseSettings() {
-  const pgService = mockSystemServices.find((s) => s.name === "PostgreSQL");
+  const { data: systemServices } = useApi(fetchSystemServices);
+  const pgService = (systemServices ?? []).find((s) => s.name === "PostgreSQL");
 
   return (
     <div>
@@ -21,7 +25,7 @@ export function DatabaseSettings() {
                 PostgreSQL
               </p>
               <p className="text-xs text-muted-foreground">
-                Supabase / Neon
+                Docker Container
               </p>
             </div>
           </div>
@@ -43,7 +47,7 @@ export function DatabaseSettings() {
               Connection URL
             </label>
             <div className="mt-1 rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs text-muted-foreground">
-              postgresql://••••••••@db.xxxxx.supabase.co:5432/postgres
+              postgresql://••••••••@localhost:5432/hivemind
             </div>
           </div>
         </div>

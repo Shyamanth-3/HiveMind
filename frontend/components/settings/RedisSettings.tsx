@@ -1,5 +1,8 @@
+"use client";
+
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { mockSystemServices } from "@/lib/mockData";
+import { useApi } from "@/hooks/useApi";
+import { fetchSystemServices } from "@/lib/api";
 import { Radio } from "lucide-react";
 
 // =============================================================================
@@ -13,7 +16,8 @@ const usageSplit = [
 ];
 
 export function RedisSettings() {
-  const redisService = mockSystemServices.find((s) => s.name === "Redis");
+  const { data: systemServices } = useApi(fetchSystemServices);
+  const redisService = (systemServices ?? []).find((s) => s.name === "Redis");
 
   return (
     <div>
