@@ -19,6 +19,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.events.kafka_event_bus import KafkaEventBus
 
+from dotenv import load_dotenv
+
+load_dotenv()
 # Basic logging setup for FastAPI
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
