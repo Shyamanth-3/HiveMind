@@ -15,7 +15,7 @@ import type {
   SystemService,
 } from "@/types";
 
-const API_BASE = "http://localhost:8000/api/v1";
+import { API_BASE } from "@/lib/config";
 
 async function apiFetch<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);
@@ -44,6 +44,14 @@ export function fetchRuns(projectId?: string): Promise<Run[]> {
 
 export function fetchRun(runId: string): Promise<Run> {
   return apiFetch<Run>(`/runs/${runId}`);
+}
+
+export function fetchWorkflowStatus(runId: string): Promise<unknown> {
+  return apiFetch<unknown>(`/workflow/${runId}/status`);
+}
+
+export function fetchWorkflowOutputs(runId: string): Promise<unknown> {
+  return apiFetch<unknown>(`/workflow/${runId}/outputs`);
 }
 
 // ---------------------------------------------------------------------------

@@ -34,7 +34,29 @@ export type EventType =
   | "task_completed"
   | "task_rejected"
   | "task_approved"
-  | "run_completed";
+  | "run_completed"
+  | "run.created"
+  | "strategy.created"
+  | "architecture.created"
+  | "research.completed"
+  | "tasks.generated"
+  | "review.completed";
+
+export interface WorkflowStatus {
+  run_id: string;
+  goal: string;
+  is_completed: boolean;
+  current_stage: string | null;
+  completed_stages: string[];
+  latest_event_type: string | null;
+  updated_at: string;
+}
+
+export interface WorkflowOutputs {
+  run_id: string;
+  goal: string;
+  outputs: Record<string, unknown>;
+}
 
 /** Run status */
 export type RunStatus = "running" | "completed" | "failed";

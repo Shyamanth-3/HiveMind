@@ -14,6 +14,7 @@ from app.api.events import router as events_router
 from app.api.memory import router as memory_router
 from app.api.agent_logs import router as agent_logs_router
 from app.api.system import router as system_router
+from app.api.workflow import router as workflow_router
 
 api_router = APIRouter()
 
@@ -24,3 +25,4 @@ api_router.include_router(events_router)
 api_router.include_router(memory_router)
 api_router.include_router(agent_logs_router)
 api_router.include_router(system_router)
+api_router.include_router(workflow_router)

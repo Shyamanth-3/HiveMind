@@ -13,10 +13,16 @@ from .schemas import KafkaEvent
 logger = logging.getLogger(__name__)
 
 
+class EventPublishError(Exception):
+    """An event could not be delivered to Kafka."""
+
+
 class KafkaEventBus(EventBus):
     """
     Concrete EventBus implementation that publishes events to Apache Kafka.
     """
+
+    DELIVERY_TIMEOUT_S = 15.0
 
     def __init__(self, bootstrap_servers: str, topic: str) -> None:
         """
@@ -31,59 +37,48 @@ class KafkaEventBus(EventBus):
         config = {
             "bootstrap.servers": bootstrap_servers,
             "client.id": "hivemind-api",
-            # Enable idempotence to ensure strictly exactly-once delivery
+            # Idempotent producer: retries inside the producer never duplicate/reorder
             "enable.idempotence": True,
             # Linger slightly to allow batching for better throughput
             "linger.ms": 5,
+            # Fail delivery (and so publish()) within 10s instead of the 5 min default
+            "message.timeout.ms": 10000,
         }
         
         logger.info(f"Initializing KafkaEventBus for topic '{self.topic}' at {bootstrap_servers}")
         self.producer = Producer(config)
 
-    def _delivery_callback(self, err: KafkaError | None, msg: Message) -> None:
-        """
-        Called once for each message produced to indicate delivery result.
-        Triggered by poll() or flush().
-        """
-        if err is not None:
-            logger.error(f"Failed to deliver message: {err}")
-        else:
-            # We log at debug level for successful deliveries to avoid flooding logs
-            logger.debug(
-                f"Message delivered to topic {msg.topic()} "
-                f"partition [{msg.partition()}] offset {msg.offset()}"
-            )
-
     def publish(self, event: KafkaEvent) -> None:
         """
-        Publish an event to Kafka.
-        
-        Uses the event's `run_id` as the message key to ensure causal ordering
-        within a single workflow execution (all events for a run go to the same partition).
-        Falls back to `event_type` if `run_id` is missing.
+        Publish an event and block until Kafka acknowledges it.
+
+        Uses the event's `run_id` as the message key so all events of a run land on
+        one partition (causal ordering). Raises EventPublishError if delivery fails,
+        so callers never mistake a lost message for a sent one.
         """
+        errors: list[KafkaError] = []
+
+        def on_delivery(err: KafkaError | None, msg: Message) -> None:
+            if err is not None:
+                errors.append(err)
+
         try:
-            value = event.to_json_bytes()
-            # Use run_id as key for partition affinity. Fallback to event_type.
             key = (event.run_id or event.event_type).encode("utf-8")
-            
-            # Asynchronously produce the message
             self.producer.produce(
                 topic=self.topic,
                 key=key,
-                value=value,
-                callback=self._delivery_callback
+                value=event.to_json_bytes(),
+                callback=on_delivery,
             )
-            
-            # Serve delivery callback queue.
-            # poll(0) is non-blocking and will just trigger callbacks for previously
-            # delivered (or failed) messages.
-            self.producer.poll(0)
-            
+            pending = self.producer.flush(self.DELIVERY_TIMEOUT_S)
         except Exception as e:
             logger.error(f"Error publishing event {event.event_type}: {e}")
-            # Re-raise so the caller can decide how to handle the failure
-            raise
+            raise EventPublishError(str(e)) from e
+
+        if errors or pending:
+            reason = errors[0] if errors else f"{pending} message(s) not delivered in time"
+            logger.error(f"Failed to deliver {event.event_type}: {reason}")
+            raise EventPublishError(str(reason))
 
     def close(self) -> None:
         """

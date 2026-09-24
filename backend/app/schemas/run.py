@@ -5,13 +5,18 @@ Pydantic models for API request validation and response serialization.
 """
 
 from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
+
+
+RunStatusLiteral = Literal["running", "completed", "failed"]
 
 
 class RunBase(BaseModel):
     project_id: str
     goal: str
-    status: str = "running"
+    status: RunStatusLiteral = "running"
     plan_text: str | None = None
     success_criteria: list[str] = []
     duration_ms: int | None = None
@@ -23,7 +28,7 @@ class RunCreate(BaseModel):
 
 
 class RunUpdate(BaseModel):
-    status: str | None = None
+    status: RunStatusLiteral | None = None
     plan_text: str | None = None
     success_criteria: list[str] | None = None
     duration_ms: int | None = None

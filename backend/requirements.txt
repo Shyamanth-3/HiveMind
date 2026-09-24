@@ -8,3 +8,6 @@ pydantic-settings
 pytest
 httpx
 confluent-kafka
+pgvector
+openai
+fastembed

@@ -10,3 +10,5 @@ __pycache__/
 create_run.py
 create_tables.py
 test_db.py
+# Local embedding model cache (downloaded by fastembed)
+.model_cache/

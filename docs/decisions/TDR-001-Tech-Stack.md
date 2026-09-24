@@ -172,6 +172,8 @@ Supported providers:
 
 Avoid vendor lock-in.
 
+> **Current implementation (2026-09):** agents depend on a provider-neutral `LLMClient` interface (`backend/agents/llm/`); the provider is chosen by `LLM_PROVIDER` (`groq` default, model `openai/gpt-oss-120b`; or `featherless`, OpenAI-compatible, model set via `LLM_MODEL`), both called through LlamaIndex. Other providers in the list below are original design intent and are not implemented. Embeddings are separate from the LLM: local `fastembed` model `BAAI/bge-small-en-v1.5` (384-d), stored in PostgreSQL + pgvector (`agent_memories`).
+
 ---
 
 # Observability
@@ -328,6 +330,8 @@ Coverage:
 - Alembic
 
 ## AI Layer
+
+> **Current implementation (2026-09):** agents depend on a provider-neutral `LLMClient` interface (`backend/agents/llm/`); the provider is chosen by `LLM_PROVIDER` (`groq` default, model `openai/gpt-oss-120b`; or `featherless`, OpenAI-compatible, model set via `LLM_MODEL`), both called through LlamaIndex. Other providers in the list below are original design intent and are not implemented. Embeddings are separate from the LLM: local `fastembed` model `BAAI/bge-small-en-v1.5` (384-d), stored in PostgreSQL + pgvector (`agent_memories`).
 
 - OpenAI
 - Anthropic

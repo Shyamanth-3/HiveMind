@@ -1,0 +1,3 @@
+"""
+Scout Agent package.
+"""

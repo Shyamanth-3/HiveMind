@@ -12,6 +12,9 @@ class TaskBase(BaseModel):
     run_id: str
     type: str
     assigned_agent: str
+    title: str | None = None
+    description: str | None = None
+    details: dict | None = None
     depends_on: list[str] = []
     status: str = "pending"
     result: str | None = None

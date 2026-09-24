@@ -46,6 +46,26 @@ class Task(Base):
         nullable=False,
         comment="Backend role key: ceo_agent, pm_agent, etc.",
     )
+    revision_number: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+        comment="0 = original Builder output; N = output of Guardian-requested revision N. Current set = highest.",
+    )
+    title: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    description: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    details: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+        comment="Builder extras: priority, estimated_complexity, required_files, acceptance_criteria",
+    )
     depends_on: Mapped[list | None] = mapped_column(
         JSON,
         nullable=True,

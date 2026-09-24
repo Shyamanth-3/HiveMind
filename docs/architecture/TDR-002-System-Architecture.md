@@ -270,6 +270,14 @@ REVIEW
 
 The Guardian agent validates outputs against success criteria and quality standards.
 
+> **Implemented (Phase 3): Guardian revision loop.** Guardian verdicts are no longer terminal failures:
+> `approved` -> `run.completed`; `rejected` -> `run.failed`; `needs_revision` -> `revision.requested` -> Builder
+> revises its previous task graph using the Guardian feedback -> `tasks.generated` -> Guardian re-reviews ->
+> `review.completed`. The loop is bounded by `MAX_REVISIONS` (default 3, enforced in code, not by the LLM); when
+> exceeded the run fails with `MAX_REVISIONS_EXCEEDED` and the Guardian feedback. Each revision is persisted
+> (`run_revisions`; revised tasks carry `tasks.revision_number`) and is idempotent under Kafka redelivery.
+> See `docs/PROJECT-STATUS.md`, section "Phase 3 - Guardian Revision Loop".
+
 ↓
 
 COMPLETED
@@ -414,6 +422,11 @@ build.completed
 review.completed
 
 revision.requested
+
+> *Implemented in Phase 3.* Emitted by the Scheduler when Guardian returns `needs_revision` and the revision count is
+> below `MAX_REVISIONS`. Payload: previous plan/research/task graph plus a strict `revision` object
+> (`run_id`, `revision_id`, `revision_number`, `max_revisions`, `source_review_event_id`, `reason`, `feedback`,
+> `requested_changes`). `revision_id` is deterministic (run + source review + number).
 
 run.completed
 
@@ -670,3 +683,34 @@ Artifacts represent the primary user-facing outputs of the system.
 Organizational memory is maintained through vector-based retrieval and persistence.
 
 This architecture serves as the foundational blueprint for HiveMind Version 1.
+
+---
+
+# Real-Time Telemetry (WebSocket)  -  Implemented in Phase 4
+
+Rule: **Kafka + PostgreSQL are the source of truth; the WebSocket is observational; frontend state is a cache.**
+WebSockets are never part of orchestration: the Scheduler does not know they exist.
+
+```
+Kafka -> Scheduler -> PostgreSQL (events, runs, tasks, run_revisions)  -- COMMIT --> NOTIFY hivemind_events '<run_id>'
+                                                                                        |
+                          FastAPI process: LISTEN thread -> TelemetryHub (run_id -> clients) -> ws://.../ws/runs/{run_id}
+                                                                                        |
+                                                                                   Next.js dashboard
+```
+
+* **Bridge:** after committing an event the Scheduler runs `pg_notify` (best effort, after the commit; failure is
+  logged and ignored). The API process LISTENs and wakes the hub, which reads the committed rows. A browser can
+  therefore never see a state the database does not have, and no WebSocket problem can fail a run, block Kafka
+  processing, roll back state or stop a downstream event.
+* **Delivery by cursor:** every client has a cursor (the last event it received). Snapshot, missed-event recovery and
+  live delivery are all "this run's events after cursor X" read from the durable `events` table.
+* **Contract:** `workflow.snapshot` (first message; `full` or `resume` after `?last_event_id=`), `workflow.event`
+  (deduplicated by `event_id`; compact safe summaries, never raw payloads/prompts), `workflow.state` (authoritative
+  run + per-agent state, the same function the REST status uses), `heartbeat`, `pong`. See `app/telemetry/contract.py`.
+* **Backpressure:** a bounded queue per client; a slow or stalled client is dropped (close 1013) and recovers from
+  the database by reconnecting. Frontend: reconnect with bounded exponential backoff + jitter, resume from the last
+  applied event, dedupe by `event_id`, watchdog for silent links. Transport state is never presented as workflow state.
+* **Security boundary:** Origin check (browsers do not apply CORS to WebSockets), ids validated before any query,
+  no internals in payloads. Authentication/authorization is a future phase; `app.api.ws.authorize` is the single
+  integration point.

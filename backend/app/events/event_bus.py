@@ -19,7 +19,7 @@ class EventBus(ABC):
     def publish(self, event: KafkaEvent) -> None:
         """
         Publish an event to the event stream.
-        This method is fire-and-forget; it returns immediately.
+        Returns only after the event is durably delivered; raises if delivery fails.
         """
         pass
 

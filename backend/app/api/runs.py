@@ -3,13 +3,14 @@ Runs API router.
 """
 
 from typing import Sequence
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.core.dependencies import get_event_bus
 from app.schemas import RunCreate, RunUpdate, RunResponse
 from app.services import run_service
+from app.services.run_service import EventBusUnavailable
 from app.events.event_bus import EventBus
 
 router = APIRouter(prefix="/runs", tags=["Runs"])
@@ -31,7 +32,13 @@ def create_run(
     event_bus: EventBus = Depends(get_event_bus),
 ) -> RunResponse:
     """Create a new run."""
-    return run_service.create_run(db, run_in, event_bus)
+    try:
+        return run_service.create_run(db, run_in, event_bus)
+    except EventBusUnavailable as e:
+        raise HTTPException(status_code=503, detail={
+            "message": "The event bus is unavailable; the run was recorded as failed. Retry later.",
+            "run_id": e.run_id,
+        })
 
 
 @router.get("/{run_id}", response_model=RunResponse)

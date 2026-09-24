@@ -1,37 +1,28 @@
-import os
+"""Groq adapter: LlamaIndex's Groq client behind the provider-neutral LLMClient contract."""
 
-from dotenv import load_dotenv
-from openai import OpenAI
+from llama_index.llms.groq import Groq
 
-from agents.llm.base import BaseLLM
+from agents.llm.interface import LLMClient
+from app.core.config import settings
+
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 
-class GroqLLM(BaseLLM):
-    def __init__(self):
-        self.client=OpenAI(
-            api_key=os.getenv("Groq_API_KEY"),
-            base_url="https://api.groq.com/openai/v1"
-        )
-        self.model=os.getenv("LLM_MODEL")
-    
-    def generate(
-        self,
-        system_prompt:str,
-        user_prompt:str,
-    ) -> str:
-        response = self.client.chat.completions.create(
+class GroqLLM(LLMClient):
+    provider = "groq"
+
+    def __init__(self, model: str | None = None, api_key: str | None = None, api_base: str | None = None):
+        self.model = model or settings.LLM_MODEL or DEFAULT_MODEL
+        self._llm = Groq(
             model=self.model,
-            messages=[
-                {
-                "role":"system",
-                "content":system_prompt,
-                },
-                {
-                "role":"user",
-                "content":user_prompt,
-                },
-            ],
-            temperature=0.2,
+            api_key=api_key or settings.GROQ_API_KEY,
+            **({"api_base": api_base} if api_base else {}),  # tests point this at a local fake server
+            timeout=settings.LLM_REQUEST_TIMEOUT_S,
+            max_retries=settings.LLM_MAX_RETRIES,
+            # gpt-oss is a reasoning model: reasoning tokens count against output-token limits
+            additional_kwargs={"reasoning_effort": settings.LLM_REASONING_EFFORT},
         )
 
-        return response.choices[0].message.content
+    async def _complete(self, prompt: str, json_mode: bool) -> str:
+        kwargs = {"response_format": {"type": "json_object"}} if json_mode else {}
+        return (await self._llm.acomplete(prompt, **kwargs)).text

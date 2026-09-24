@@ -7,6 +7,7 @@ is a future phase.
 """
 
 from datetime import datetime, timezone
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.schemas.system import AgentStatusResponse, SystemServiceResponse
@@ -69,7 +70,7 @@ def get_system_services(db: Session) -> list[SystemServiceResponse]:
     # Check Postgres
     try:
         # Simple query to check if DB is responsive
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         pg_status = "online"
         pg_details = "Connected via SQLAlchemy"
     except Exception as e:
@@ -93,7 +94,7 @@ def get_system_services(db: Session) -> list[SystemServiceResponse]:
             name="LLM Provider",
             status="cold-start",
             latency_ms=2400,
-            details="Gemini Flash · Free tier · Waking up after 15min idle",
+            details=f"{settings.LLM_PROVIDER} · {settings.LLM_MODEL or 'default model'}",
         ),
     ]
     return services
