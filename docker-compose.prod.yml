@@ -1,0 +1,170 @@
+# HiveMind — production deployment (Docker Compose, single host).
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Network topology (see docs/deployment/PRODUCTION.md):
+#   * PostgreSQL and Kafka have NO published ports and live only on the `internal` network (internal: true = no
+#     route to the outside world). Nothing outside the compose project can reach them.
+#   * Only the frontend (3000) and the API (8000) are published, and only on 127.0.0.1: a TLS-terminating reverse
+#     proxy on the host is the single public entry point (HTTPS/WSS). Never expose these ports directly.
+#   * The API and Scheduler also join `egress` (they must call the LLM provider); databases do not.
+# Every secret comes from the environment (`${VAR:?}` fails loudly when missing): nothing is stored in this file.
+# This file is NOT used for development: use docker-compose.yml there.
+
+name: hivemind
+
+x-backend-env: &backend-env
+  ENVIRONMENT: production
+  DATABASE_URL: postgresql+psycopg://hivemind_app:${APP_DB_PASSWORD:?set APP_DB_PASSWORD}@postgres:5432/hivemind
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  KAFKA_SECURITY_PROTOCOL: ${KAFKA_SECURITY_PROTOCOL:-}
+  KAFKA_SASL_MECHANISM: ${KAFKA_SASL_MECHANISM:-}
+  KAFKA_SASL_USERNAME: ${KAFKA_SASL_USERNAME:-}
+  KAFKA_SASL_PASSWORD: ${KAFKA_SASL_PASSWORD:-}
+  LLM_PROVIDER: ${LLM_PROVIDER:?set LLM_PROVIDER (groq or featherless)}
+  LLM_MODEL: ${LLM_MODEL:-}
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  FEATHERLESS_API_KEY: ${FEATHERLESS_API_KEY:-}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (random, >= 32 chars)}
+  COOKIE_SECURE: "true"
+  CORS_ORIGINS: ${PUBLIC_APP_ORIGIN:?set PUBLIC_APP_ORIGIN (https://...)}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hivemind_owner            # owns the schema; used ONLY by the migrate job
+      POSTGRES_PASSWORD: ${POSTGRES_OWNER_PASSWORD:?set POSTGRES_OWNER_PASSWORD}
+      POSTGRES_DB: hivemind
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init-app-role.sh:/docker-entrypoint-initdb.d/10-init-app-role.sh:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hivemind_owner -d hivemind"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  kafka:
+    image: apache/kafka:3.9.0
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # One-shot, deliberate schema migration (never automatic on API start-up). Connects as the owner role.
+  migrate:
+    build: ./backend
+    image: hivemind-backend:prod
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    environment:
+      <<: *backend-env
+      DATABASE_URL: postgresql+psycopg://hivemind_owner:${POSTGRES_OWNER_PASSWORD:?set POSTGRES_OWNER_PASSWORD}@postgres:5432/hivemind
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [internal]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  api:
+    image: hivemind-backend:prod
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}   # the reverse proxy's address (trusted X-Forwarded-*)
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - model_cache:/models
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      kafka: {condition: service_healthy}
+    networks: [internal, egress]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:   # liveness only: a database/Kafka blip must not restart a healthy API (readiness is /health/ready)
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=2).status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  scheduler:
+    image: hivemind-backend:prod
+    command: ["python", "-m", "app.scheduler"]
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    volumes:
+      - model_cache:/models
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      kafka: {condition: service_healthy}
+    networks: [internal, egress]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    stop_grace_period: 60s     # SIGTERM: finish the event in flight, commit its offset, then exit
+    healthcheck:
+      disable: true            # no HTTP surface; `restart: unless-stopped` covers crashes (see docs: limitations)
+
+  frontend:
+    build:
+      context: ./frontend
+      args:   # PUBLIC URLs only (compiled into the browser bundle)
+        NEXT_PUBLIC_API_ORIGIN: ${PUBLIC_API_ORIGIN:?set PUBLIC_API_ORIGIN (https://...)}
+        NEXT_PUBLIC_WS_ORIGIN: ${PUBLIC_WS_ORIGIN:?set PUBLIC_WS_ORIGIN (wss://...)}
+    image: hivemind-frontend:prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks: [egress]
+    read_only: true
+    tmpfs: [/tmp, /app/.next/cache]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+networks:
+  internal:
+    internal: true     # no external connectivity: PostgreSQL and Kafka are unreachable from outside
+  egress: {}           # outbound access (LLM provider) and the published loopback ports
+
+volumes:
+  postgres_data:
+  kafka_data:
+  model_cache:

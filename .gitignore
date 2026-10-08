@@ -1,2 +1,9 @@
 .playgorund/
 .env
+.env.production
+.env.local
+
+__pycache__/
+*.pyc
+*.log
+*.err
