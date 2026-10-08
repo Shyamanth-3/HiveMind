@@ -5,7 +5,7 @@ Pydantic models for API request validation and response serialization.
 """
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProjectBase(BaseModel):
@@ -15,13 +15,15 @@ class ProjectBase(BaseModel):
 
 
 class ProjectCreate(ProjectBase):
-    pass
+    name: str = Field(min_length=1, max_length=255)
+    owner: str = Field(min_length=1, max_length=100)
+    goal_summary: str = Field(min_length=1, max_length=5000)
 
 
 class ProjectUpdate(BaseModel):
-    name: str | None = None
-    owner: str | None = None
-    goal_summary: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    owner: str | None = Field(default=None, min_length=1, max_length=100)
+    goal_summary: str | None = Field(default=None, min_length=1, max_length=5000)
 
 
 class ProjectResponse(ProjectBase):

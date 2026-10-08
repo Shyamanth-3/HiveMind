@@ -28,6 +28,7 @@ os.environ.update(
     DATABASE_URL=_test_url.render_as_string(hide_password=False),
     GROQ_API_KEY="test-key-not-real",
     REDIS_URL="redis://unused",
+    ENVIRONMENT="test",
     EMBEDDING_PROVIDER="none",  # unit tests inject their own embedding service; no model download
 )
 
@@ -42,7 +43,7 @@ from app.db.database import get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from tests.fakes import FakeBus  # noqa: E402
 
-TABLES = "agent_logs, agent_memories, memory_chunks, events, tasks, runs, projects"
+TABLES = "agent_logs, agent_memories, memory_chunks, events, tasks, runs, projects, users"
 
 
 @pytest.fixture(scope="session")
@@ -95,3 +96,33 @@ def client(session_factory, bus):
     app.dependency_overrides[get_event_bus] = lambda: bus
     yield TestClient(app)  # no `with`: skip the lifespan (it would open a real Kafka producer)
     app.dependency_overrides.clear()
+
+
+# ── authentication for the pre-Phase-7 API tests ────────────────────────────
+# Tests that use the database run as this authenticated ADMINISTRATOR (so the existing API tests keep covering the
+# endpoints). Modules that test authentication / authorization itself opt out with `pytestmark = pytest.mark.real_auth`
+# and use real registration, cookies and tokens.
+
+DEFAULT_USER_ID = "00000000-0000-4000-8000-000000000001"
+
+
+@pytest.fixture(autouse=True)
+def _default_authenticated_user(request):
+    if request.node.get_closest_marker("real_auth") or "session_factory" not in request.fixturenames:
+        yield
+        return
+    from app.core.auth import get_current_user, get_ws_user
+    from app.core.rate_limit import limiter
+    from app.models import User
+
+    sf = request.getfixturevalue("session_factory")
+    with sf() as s:
+        s.add(User(id=DEFAULT_USER_ID, email="default-test-user@example.com", password_hash="x", is_admin=True))
+        s.commit()
+    user = User(id=DEFAULT_USER_ID, email="default-test-user@example.com", password_hash="x", is_admin=True, is_active=True)
+    limiter.reset()
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_ws_user] = lambda: user
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.pop(get_ws_user, None)

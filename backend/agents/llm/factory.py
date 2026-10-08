@@ -26,15 +26,16 @@ class LLMConfigError(ValueError):
     """The LLM configuration is unusable (unknown provider, missing credential or model)."""
 
 
-def validate_llm_config() -> tuple[str, str]:
+def validate_llm_config(cfg=None) -> tuple[str, str]:
     """Return (provider, model) or raise LLMConfigError with an actionable message. Never includes a secret."""
-    provider = (settings.LLM_PROVIDER or "").strip().lower()
+    cfg = cfg or settings
+    provider = (cfg.LLM_PROVIDER or "").strip().lower()
     if provider not in PROVIDERS:
-        raise LLMConfigError(f"Unsupported LLM_PROVIDER '{settings.LLM_PROVIDER}'. Supported: {', '.join(sorted(PROVIDERS))}.")
+        raise LLMConfigError(f"Unsupported LLM_PROVIDER '{cfg.LLM_PROVIDER}'. Supported: {', '.join(sorted(PROVIDERS))}.")
     _, key_attr, default_model = PROVIDERS[provider]
-    if not getattr(settings, key_attr).strip():
+    if not getattr(cfg, key_attr).strip():
         raise LLMConfigError(f"LLM_PROVIDER={provider} requires {key_attr} to be set.")
-    model = settings.LLM_MODEL.strip() or default_model
+    model = cfg.LLM_MODEL.strip() or default_model
     if not model:
         raise LLMConfigError(f"LLM_PROVIDER={provider} requires LLM_MODEL to be set (it has no default model).")
     return provider, model

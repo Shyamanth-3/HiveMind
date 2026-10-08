@@ -14,10 +14,15 @@ import asyncio
 from contextlib import asynccontextmanager
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.core.config import settings
+from app.core.middleware import (
+    BodySizeLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware, request_id_var,
+)
 from app.core.redaction import install_log_redaction
 from app.events.kafka_event_bus import KafkaEventBus
 from agents.llm.factory import log_llm_config
@@ -28,7 +33,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 # Basic logging setup for FastAPI
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
 install_log_redaction()  # provider errors can echo credentials; scrub every log record
 logger = logging.getLogger(__name__)
 
@@ -42,7 +47,8 @@ async def lifespan(app: FastAPI):
     Startup: Initialize Kafka producer and store in app state.
     Shutdown: Flush remaining Kafka messages.
     """
-    logger.info(f"🐝 {settings.APP_NAME} backend starting...")
+    settings.assert_production_ready()  # ENVIRONMENT=production: refuse to start on an unsafe configuration
+    logger.info(f"🐝 {settings.APP_NAME} backend starting... (environment={settings.ENVIRONMENT})")
     logger.info(f"   Database: {settings.DATABASE_URL.split('@')[-1]}")
     log_llm_config()
     
@@ -63,9 +69,11 @@ async def lifespan(app: FastAPI):
     yield
     
     logger.info(f"🐝 {settings.APP_NAME} backend shutting down...")
-    await hub.close_all()
+    await hub.close_all()      # close WebSockets first (clients get 1001 and reconnect elsewhere)
     listener.stop()
-    event_bus.close()
+    event_bus.close()          # flush the Kafka producer
+    from app.db.database import engine
+    engine.dispose()           # release pooled PostgreSQL connections
 
 
 # ── App ─────────────────────────────────────────────────────────────────────
@@ -74,6 +82,10 @@ app = FastAPI(
     description="Event-Driven Multi-Agent AI Operating System — Backend API",
     version="0.1.0",
     lifespan=lifespan,
+    # The interactive docs / schema describe every endpoint: development and test only.
+    docs_url=None if settings.is_production else "/docs",
+    redoc_url=None if settings.is_production else "/redoc",
+    openapi_url=None if settings.is_production else "/openapi.json",
 )
 
 # ── CORS ────────────────────────────────────────────────────────────────────
@@ -83,9 +95,31 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
 )
+# Outermost last: request context wraps everything so every response (including 413/500) carries X-Request-ID.
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(BodySizeLimitMiddleware)
+app.add_middleware(RequestContextMiddleware)
+
+
+# ── Error responses: never internals ────────────────────────────────────────
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """422 with only WHERE and WHY. FastAPI's default echoes the submitted input (which can be a password)."""
+    errors = [{"loc": [str(p) for p in e.get("loc", ())], "msg": str(e.get("msg", "invalid"))} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": errors})
+
+
+@app.exception_handler(Exception)
+async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    """500 without stack trace, paths or connection strings; the detail stays in the (redacted) server log."""
+    rid = request.scope.get("request_id") or request_id_var.get()
+    logger.error("Unhandled error | request=%s %s %s: %s", rid, request.method, request.url.path,
+                 type(exc).__name__, exc_info=exc)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error", "request_id": rid},
+                        headers={"X-Request-ID": rid})
 
 # ── Routers ─────────────────────────────────────────────────────────────────
 # Health check — kept outside /api/v1 so load balancers can hit it directly.

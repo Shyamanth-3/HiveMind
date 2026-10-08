@@ -1,0 +1,21 @@
+# Never ship secrets, local state or development-only files in an image
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.model_cache/
+tests/
+test_*.py
+create_run.py
+create_tables.py
+seed.py
+pytest.ini
+requirements-dev.txt
+Dockerfile
+.dockerignore
+.git/
+*.md

@@ -6,6 +6,8 @@ import logging
 
 from confluent_kafka import Producer, Message, KafkaError
 
+from app.core.kafka_config import kafka_security_config
+
 from .event_bus import EventBus
 from .schemas import KafkaEvent
 
@@ -45,6 +47,7 @@ class KafkaEventBus(EventBus):
             "message.timeout.ms": 10000,
         }
         
+        config.update(kafka_security_config())
         logger.info(f"Initializing KafkaEventBus for topic '{self.topic}' at {bootstrap_servers}")
         self.producer = Producer(config)
 

@@ -1,13 +1,14 @@
 fastapi[standard]
 sqlalchemy
-psycopg
+psycopg[binary]
 alembic
 redis
 python-dotenv
 pydantic-settings
-pytest
 httpx
 confluent-kafka
 pgvector
 openai
 fastembed
+pyjwt
+argon2-cffi

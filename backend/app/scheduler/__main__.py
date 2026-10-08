@@ -39,6 +39,7 @@ def report_stale_runs() -> None:
 
 
 def main() -> None:
+    settings.assert_production_ready()  # ENVIRONMENT=production: refuse to start on an unsafe configuration
     log_llm_config()
     embeddings = get_embedding_service()
     if embeddings is None:

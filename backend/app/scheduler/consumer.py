@@ -54,6 +54,7 @@ from sqlalchemy.exc import InterfaceError, OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.kafka_config import kafka_security_config
 from app.core.metrics import metrics
 from app.core.redaction import redact_secrets
 from app.db.database import SessionLocal
@@ -146,7 +147,7 @@ class SchedulerConsumer:
         self.event_bus = event_bus or KafkaEventBus(bootstrap_servers, topic)
 
         logger.info(f"Initializing SchedulerConsumer for topic '{self.topic}' (group: {group_id})")
-        self.consumer = consumer or Consumer({
+        self.consumer = consumer or Consumer({**kafka_security_config(),
             "bootstrap.servers": bootstrap_servers,
             "group.id": group_id,
             "auto.offset.reset": "earliest",

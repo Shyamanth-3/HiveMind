@@ -10,6 +10,7 @@ from app.core.metrics import Metrics, metrics
 from app.core.redaction import SecretRedactingFilter, redact_secrets
 from app.services.run_service import find_stale_runs
 from tests import scenario_agents as sa
+from tests.conftest import DEFAULT_USER_ID
 from tests.minikafka import Harness
 from tests.test_reliability_kafka import state, submit
 
@@ -64,6 +65,7 @@ def test_stale_runs_are_reported_never_auto_failed(session_factory, client):
     rid = submit(h, session_factory, "tag=st v=approved")  # created, scheduler never started
     with session_factory() as db:
         db.execute(text("UPDATE runs SET created_at = now() - interval '2 hours' WHERE id = :r"), {"r": rid})
+        db.execute(text("UPDATE projects SET owner_id = :u"), {"u": DEFAULT_USER_ID})  # the status endpoint is owner-scoped
         db.commit()
         assert [r["run_id"] for r in find_stale_runs(db, timedelta(minutes=30))] == [rid]
         assert find_stale_runs(db, timedelta(hours=3)) == []

@@ -7,7 +7,7 @@ Pydantic models for API request validation and response serialization.
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 RunStatusLiteral = Literal["running", "completed", "failed"]
@@ -23,8 +23,8 @@ class RunBase(BaseModel):
 
 
 class RunCreate(BaseModel):
-    project_id: str
-    goal: str
+    project_id: str = Field(min_length=1, max_length=36)
+    goal: str = Field(min_length=1, max_length=5000)
 
 
 class RunUpdate(BaseModel):

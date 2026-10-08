@@ -5,7 +5,7 @@ Pydantic models for API request validation and response serialization.
 """
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MemoryChunkBase(BaseModel):
@@ -16,7 +16,10 @@ class MemoryChunkBase(BaseModel):
 
 
 class MemoryChunkCreate(MemoryChunkBase):
-    pass
+    project_id: str = Field(min_length=1, max_length=36)
+    content: str = Field(min_length=1, max_length=5000)
+    embedding_dimensions: int = Field(default=1536, ge=1, le=4096)
+    source: str = Field(min_length=1, max_length=100)
 
 
 class MemoryChunkResponse(MemoryChunkBase):

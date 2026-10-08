@@ -12,7 +12,7 @@ Maps to frontend type: Project { id, name, owner, created_at, goal_summary }
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import String, Text, DateTime
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -35,6 +35,14 @@ class Project(Base):
     owner: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
+    )
+    # The authenticated user who owns this project. Every run/task/event/memory is reachable only through it.
+    # NULL = a legacy, unowned project (created before authentication): visible to nobody.
+    owner_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
     )
     goal_summary: Mapped[str] = mapped_column(
         Text,
