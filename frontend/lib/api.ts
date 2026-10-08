@@ -16,9 +16,15 @@ import type {
 } from "@/types";
 
 import { API_BASE } from "@/lib/config";
+import { UnauthorizedError, redirectToLogin } from "@/lib/auth";
 
 async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`);
+  // The session is an httpOnly cookie: send it, never handle a token in JavaScript.
+  const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+  if (res.status === 401) {
+    redirectToLogin(); // expired / missing session: sign in again
+    throw new UnauthorizedError();
+  }
   if (!res.ok) {
     throw new Error(`API error ${res.status}: ${res.statusText}`);
   }
